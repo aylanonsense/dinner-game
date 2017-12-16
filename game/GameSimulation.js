@@ -2,6 +2,7 @@ class GameSimulation {
 	constructor() {
 		this.state = null;
 		this.players = [];
+		this.choose = null;
 	}
 	reset(state) {
 		this.state = state;
