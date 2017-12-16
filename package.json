@@ -1,0 +1,42 @@
+{
+  "name": "dinner-game",
+  "version": "0.0.1",
+  "description": "Just me attempting to simulate a board game.",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bridgs/dinner-game.git"
+  },
+  "scripts": {
+    "start": "babel-node index.js --presets env",
+    "start:watch": "nodemon index.js --exec babel-node --presets env"
+  },
+  "babel": {
+    "presets": [
+      [
+        "env",
+        {
+          "targets": {
+            "node": "8.5.0"
+          },
+          "debug": false
+        }
+      ]
+    ],
+    "plugins": [
+      "transform-object-rest-spread"
+    ]
+  },
+  "nodemonConfig": {
+    "ext": "js,json,mustache,css,svg"
+  },
+  "dependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-plugin-transform-object-rest-spread": "^6.26.0",
+    "babel-preset-env": "^1.6.1",
+    "clone": "^2.1.1"
+  },
+  "devDependencies": {
+    "nodemon": "^1.13.3"
+  }
+}
