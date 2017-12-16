@@ -3,7 +3,7 @@
 // choices -> chooser
 // ai players
 
-require('./game/rules-ideation');
+require('./game/main');
 
 /*
 

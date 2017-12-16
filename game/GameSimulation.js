@@ -1,18 +1,15 @@
 class GameSimulation {
 	constructor() {
 		this.state = null;
-		this.matchesReality = true;
 		this.players = [];
 	}
 	reset(state) {
 		this.state = state;
-		this.matchesReality = true;
 	}
 	getNumExpectedPlayers() {
-		return 2;
+		return 1;
 	}
-	run() {
-		this.playTurn();
-	}
-	playTurn() {}
+	run() {}
 }
+
+export default GameSimulation;
