@@ -42,9 +42,8 @@ function runSimulation(game, state, evaluate) {
 
 	// iterate until we arrive at a final outcome
 	let finalOutcome = null;
-	let attemptsLeft = 5;
+	let attemptsLeft = 500;
 	do {
-		console.log('Looping...');
 		// run the simulation for a bit, thus forcing the players to make choices
 		game.reset(clone(state));
 		game.run();
@@ -58,7 +57,7 @@ function runSimulation(game, state, evaluate) {
 			finalOutcome.choices.unshift(h.choice);
 			h.outcomes.push(finalOutcome);
 			// once we've explored all the options, we can decide which choice worked out best
-			if (h.choice >= h.numOptions) {
+			if (h.choice >= h.numOptions - 1) {
 				finalOutcome = h.outcomes.reduce((outcome, best) => {
 					if (!best || outcome.evaluations[h.player.index] > best.evaluations[h.player.index]) {
 						return outcome;
@@ -76,12 +75,11 @@ function runSimulation(game, state, evaluate) {
 				break;
 			}
 		}
-		console.log('  finalOutcome so far:', finalOutcome);
 		attemptsLeft -= 1;
+		index = -1;
 	} while (history.length > 0 && attemptsLeft > 0);
 
 	// and we're done!
-	console.log('done!!');
 	return finalOutcome;
 }
 

@@ -38,4 +38,4 @@ function evaluate(state) {
 	}
 }
 
-runSimulation(new SillyCardPickingGame(), state, evaluate);
+console.log(runSimulation(new SillyCardPickingGame(), state, evaluate));
