@@ -1,3 +1,12 @@
+// game state
+// game rules
+// choices -> chooser
+// ai players
+
+require('./game/rules-ideation');
+
+/*
+
 const cards = [
 	'green bean casserole',
 	'turkey',
@@ -37,4 +46,4 @@ let gameState = {
 	]
 };
 
-console.log('hi');
+console.log('hi');*/
