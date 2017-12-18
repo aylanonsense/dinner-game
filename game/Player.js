@@ -4,6 +4,9 @@ class Player {
 		this.choose = choose; // (options, isUncertain, weights)
 		this.evaluate = evaluate; // (state)
 	}
+	average(evaluations) {
+		return evaluations.reduce((evaluation, sum) => evaluation + sum, 0) / evaluations.length;
+	}
 }
 
 export default Player;

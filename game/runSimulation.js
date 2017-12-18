@@ -6,11 +6,11 @@ function runSimulation(game, state, evaluate) {
 	game.reset(state);
 
 	// create a history of choices
-	let history = [];
+	let decisionHistory = [];
 	let index = -1;
 
 	// create a function for choosing from a list of options
-	function choose(options, isUncertain, actualChoice) {
+	function choose(options, actualChoiceIndex, playersWhoKnowActualChoice, playerChoosing) {
 		// a choice with one or fewer options doesn't count as a meaningful choice
 		if (!options || options.length === 0) {
 			return null;
@@ -21,43 +21,41 @@ function runSimulation(game, state, evaluate) {
 		else {
 			index += 1;
 			// just blindly choose the first option to begin
-			if (!history[index]) {
-				history[index] = {
+			if (!decisionHistory[index]) {
+				decisionHistory[index] = {
 					numOptions: options.length,
-					choice: 0,
-					isUncertain: isUncertain || false,
-					actualChoiceIndex: null,
+					choiceIndex: 0,
+					actualChoiceIndex,
+					playersWhoKnowActualChoice,
+					playerChoosing,
 					outcomes: []
 				};
-				if (!isUncertain) {
-					history[index].player = this;
-				}
 			}
-			if (options[history[index].choice] === actualChoice) { // todo this could fail miserably
-				history[index].actualChoiceIndex = history[index].choice;
-			}
-			// console.log(`  [choice ${index}] Player ${this.index + 1} chooses ${options[history[index].choice]}`);
-			// otherwise just choose based on whatever's in the history
-			return options[history[index].choice];
+			// then just choose based on whatever's in the decision history
+			// console.log(`  [descision ${index}] ${decisionHistory[index].choiceIndex} (${options[decisionHistory[index].choiceIndex]})`);
+			return options[decisionHistory[index].choiceIndex];
 		}
 	}
 
 	// create players
 	game.players = [];
 	for (let i = 0; i < game.getNumExpectedPlayers(); i++) {
-		game.players.push(new Player(i, choose, evaluate));
+		game.players.push(new Player(i, function(options) {
+			return choose(options, null, null, this);
+		}, evaluate));
 	}
 
 	// assign a choose function to the game simulation
-	game.choose = (options, actualChoice) => {
-		return choose(options, true, actualChoice);
+	game.choose = (options, actualChoiceIndex, playersWhoKnowActualChoice) => {
+		return choose(options, actualChoiceIndex, playersWhoKnowActualChoice || [], null);
 	};
 
 	// iterate until we arrive at a final outcome
 	let finalOutcome = null;
-	let attemptsLeft = 1000000;
+	let iterations = 0;
 	do {
-		// console.log('Running');
+		// console.log('Running...');
+		index = -1;
 		// run the simulation for a bit, thus forcing the players to make choices
 		game.reset(clone(state));
 		game.run();
@@ -66,31 +64,28 @@ function runSimulation(game, state, evaluate) {
 		// have each player evaluate the outcome of the game
 		let evaluations = game.players.map(player => player.evaluate(finalState));
 		finalOutcome = { evaluations, state: finalState, choices: [] };
-		for (let i = history.length - 1; i >= 0; i--) {
-			let h = history[i];
-			finalOutcome.choices.unshift(h.choice);
-			h.outcomes.push(finalOutcome);
-			// once we've explored all the options, we can decide which choice worked out best)
-			if (h.choice >= h.numOptions - 1) {
-				// if there's uncertainty, we pick the actual choice but evaluate with an average of the choices
-				if (h.isUncertain) {
-					let averageEvaluation = h.outcomes[0].evaluations.map(n => 0);
-					for (let i = 0; i < h.outcomes.length; i++) {
-						for (let j = 0; j < h.outcomes[i].evaluations.length; j++) {
-							averageEvaluation[j] += h.outcomes[i].evaluations[j] / h.outcomes.length;
-						}
-					}
-					finalOutcome = {
-						evaluations: averageEvaluation,
-						state: h.outcomes[h.actualChoiceIndex].state,
-						choices: finalOutcome.choices
-					}
-					finalOutcome.choices[0] = h.actualChoiceIndex;
-				}
-				// otherwise we just pick the best choice for the player
-				else {
-					finalOutcome = h.outcomes.reduce((outcome, best) => {
-						if (!best || outcome.evaluations[h.player.index] > best.evaluations[h.player.index]) {
+		// then work backwards through the history of decisions that were made
+		while (decisionHistory.length > 0) {
+			// console.log('  Inspecting...');
+			// console.log(`    Looking at [decision ${decisionHistory.length - 1}]`);
+			let decisionPoint = decisionHistory[decisionHistory.length - 1];
+			// piece together an array of the choices that were made
+			finalOutcome.choices.unshift(decisionPoint.choiceIndex);
+			// keep track of the outcome of each option of the decision
+			decisionPoint.outcomes[decisionPoint.choiceIndex] = finalOutcome;
+			// if we haven't explored all the options for this decision point yet, try the next one!
+			if(decisionPoint.choiceIndex < decisionPoint.numOptions - 1) {
+				decisionPoint.choiceIndex += 1;
+				break;
+			}
+			// once we've explored all the options of this decision point, we can decide which choice worked out best
+			else {
+				// if a player is making the choice, we choose the outcome that evaluated best for that player
+				let player = decisionPoint.playerChoosing;
+				if (player) {
+					// console.log(`      The decision was made by player ${player.index}`);
+					finalOutcome = decisionPoint.outcomes.reduce((outcome, best) => {
+						if (!best || outcome.evaluations[player.index] > best.evaluations[player.index]) {
 							return outcome;
 						}
 						else {
@@ -98,19 +93,35 @@ function runSimulation(game, state, evaluate) {
 						}
 					});
 				}
-				// and we also remove this decision point from the history array
-				history.pop();
-			}
-			// if we haven't explored all the options yet, then increment the final one and move onto the next step
-			else {
-				h.choice += 1;
-				break;
+				//if a player isn't making the choice, then we know what the actual choice will end up being
+				else {
+					// console.log(`      The decision was not made by a player`);
+					// console.log(decisionPoint);
+					let actualOutcome = decisionPoint.outcomes[decisionPoint.actualChoiceIndex];
+					// the players don't know the actual choice, so they evaluate based on the average of all outcomes
+					let evaluations = game.players.map(player => player.average(decisionPoint.outcomes.map(outcome => outcome.evaluations[player.index])));
+					// except some players DO know the actual choice, so they evaluate based on the actual outcome
+					decisionPoint.playersWhoKnowActualChoice.forEach(player => {
+						evaluations[player.index] = actualOutcome.evaluations[player.index];
+					});
+					// and that gives us the outcome on an event with uncertainty!
+					finalOutcome = {
+						evaluations: evaluations,
+						state: actualOutcome.state,
+						choices: finalOutcome.choices
+					};
+					finalOutcome.choices[0] = decisionPoint.actualChoiceIndex;
+				}
+				// and now we're done with this decision point!
+				decisionHistory.pop();
 			}
 		}
-		// console.log('  outcome:', finalOutcome.evaluations);
-		attemptsLeft -= 1;
-		index = -1;
-	} while (history.length > 0 && attemptsLeft > 0);
+		// only try so many iterations
+		iterations++;
+		if (iterations >= 10000) {
+			throw new Error('Failed to fully evaluate in fewer than 10,000 iterations');
+		}
+	} while (decisionHistory.length > 0);
 
 	// and we're done!
 	return finalOutcome;
