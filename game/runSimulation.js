@@ -1,9 +1,13 @@
 import clone from 'clone';
 import Player from './Player';
 
-function runSimulation(game, state, evaluate) {
+function debugLog(...args) {
+	// console.log(...args);
+}
+
+function runSimulation(game, state, evaluate, seed) {
 	// reset the game
-	game.reset(state);
+	game.reset(state, seed);
 
 	// create a history of choices
 	let decisionHistory = [];
@@ -33,7 +37,7 @@ function runSimulation(game, state, evaluate) {
 				};
 			}
 			// then just choose based on whatever's in the decision history
-			// console.log(`  Choosing [decision ${index}] [choice ${decisionHistory[index].choiceIndex}] [actual value ${options[decisionHistory[index].choiceIndex]}]`);
+			debugLog(`  Choosing [decision ${index}] [choice ${decisionHistory[index].choiceIndex}] [actual value ${options[decisionHistory[index].choiceIndex]}]`);
 			return options[decisionHistory[index].choiceIndex];
 		}
 	}
@@ -41,7 +45,7 @@ function runSimulation(game, state, evaluate) {
 	// create players
 	game.players = [];
 	for (let i = 0; i < game.getNumExpectedPlayers(); i++) {
-		game.players.push(new Player(i, function(options) {
+		game.players.push(new Player(game, i, function(options) {
 			return choose(options, null, null, this, false);
 		}, function(options) {
 			return choose(options, null, [ this ], this, true);
@@ -52,12 +56,15 @@ function runSimulation(game, state, evaluate) {
 	game.choose = (options, actualChoiceIndex, playersWhoKnowActualChoice) => {
 		return choose(options, actualChoiceIndex, playersWhoKnowActualChoice || [], null, true);
 	};
+	game.chooseRandomly = (options, playersWhoKnowActualChoice) => {
+		return choose(options, null, playersWhoKnowActualChoice || [], null);
+	};
 
 	// iterate until we arrive at a final outcome
 	let finalOutcome = null;
 	let iterations = 0;
 	do {
-		// console.log('Running...');
+		debugLog('Running...');
 		index = -1;
 		// run the simulation for a bit, thus forcing the players to make choices
 		game.reset(clone(state));
@@ -69,7 +76,7 @@ function runSimulation(game, state, evaluate) {
 		finalOutcome = { evaluations, state: finalState, choices: [] };
 		// then work backwards through the history of decisions that were made
 		while (decisionHistory.length > 0) {
-			// console.log(`  Looking at [decision ${decisionHistory.length - 1}]`);
+			debugLog(`  Looking at [decision ${decisionHistory.length - 1}]`);
 			let decisionPoint = decisionHistory[decisionHistory.length - 1];
 			// piece together an array of the choices that were made
 			finalOutcome.choices.unshift(decisionPoint.choiceIndex);
@@ -78,32 +85,32 @@ function runSimulation(game, state, evaluate) {
 			// if we haven't explored all the options for this decision point yet, try the next one!
 			if(decisionPoint.choiceIndex < decisionPoint.numOptions - 1) {
 				decisionPoint.choiceIndex += 1;
-				// console.log(`    Resetting to [decision ${decisionHistory.length - 1}] [choice ${decisionPoint.choiceIndex}]`);
+				debugLog(`    Resetting to [decision ${decisionHistory.length - 1}] [choice ${decisionPoint.choiceIndex}]`);
 				break;
 			}
-			// console.log(`    Evaluating final choice to [decision ${decisionHistory.length - 1}]`);
+			debugLog(`    Evaluating final choice to [decision ${decisionHistory.length - 1}]`);
 			// once we've explored all the options of this decision point, we can decide which choice worked out best
 			let actualChoiceIndex = null;
 			// if a player is making the choice, we choose the outcome that evaluated best for that player
 			let player = decisionPoint.playerChoosing;
 			if (player) {
-				// console.log('    The player gets to make the choice');
-				decisionPoint.outcomes.forEach((outcome, i) => {
-					// console.log(`      [choice ${i}] is evaluated as a ${outcome.evaluations[player.index]}`);
-					if (actualChoiceIndex === null || outcome.evaluations[player.index] > decisionPoint.outcomes[actualChoiceIndex].evaluations[player.index]) {
-						actualChoiceIndex = i;
-					}
-				})
+				debugLog('    The player gets to make the choice');
+				actualChoiceIndex = player.pickEvaluation(decisionPoint.outcomes.map(outcome => outcome.evaluations[player.index]));
 			}
-			//if a player isn't making the choice, then we must know what the actual choice will end up being
-			else {
-				// console.log('    The choice is decided already');
+			// if a player isn't making the choice, then we might know what the actual choice will end up being
+			else if (typeof(decisionPoint.actualChoiceIndex) === 'number') {
+				debugLog('    The choice is already decided');
 				actualChoiceIndex = decisionPoint.actualChoiceIndex;
 			}
+			// but if we don't, we'll choose something randomly
+			else {
+				actualChoiceIndex = Math.floor(game.rand() * decisionPoint.numOptions);
+				debugLog(`    The choice was decided randomly [choice ${actualChoiceIndex}]`);
+			}
 			// now that we know what the actual choice will be, we can handle the evaluations
-			// console.log(`    Deciding on [choice ${actualChoiceIndex}]`);
+			debugLog(`    Deciding on [choice ${actualChoiceIndex}]`);
 			let actualOutcome = decisionPoint.outcomes[actualChoiceIndex];
-			// console.log(`      The evaluations for each outcome are  ${decisionPoint.outcomes.map(outcome => outcome.evaluations.join('/')).join('  ')}`);
+			debugLog(`      The evaluations for each outcome are  ${decisionPoint.outcomes.map(outcome => outcome.evaluations.join('/')).join('  ')}`);
 			finalOutcome.state = actualOutcome.state;
 			finalOutcome.choices[0] = actualChoiceIndex;
 			// if the actual choice is secret, the evaluations will be based on an average of all the outcomes
@@ -111,7 +118,7 @@ function runSimulation(game, state, evaluate) {
 				finalOutcome.evaluations = game.players.map(player => player.average(decisionPoint.outcomes.map(outcome => outcome.evaluations[player.index])));
 				// ...except the choice is not a secret for everybody!
 				decisionPoint.playersWhoKnowActualChoice.forEach(player => {
-					// console.log(`      [Player ${player.index}] knows the actual evaluation of [decision ${decisionHistory.length - 1}] (${actualOutcome.evaluations[player.index]} rather than ${finalOutcome.evaluations[player.index]})`)
+					debugLog(`      [Player ${player.index}] knows the actual evaluation of [decision ${decisionHistory.length - 1}] (${actualOutcome.evaluations[player.index]} rather than ${finalOutcome.evaluations[player.index]})`)
 					finalOutcome.evaluations[player.index] = actualOutcome.evaluations[player.index];
 				});
 			}
