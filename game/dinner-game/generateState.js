@@ -1,18 +1,7 @@
-const CARD_TYPES = [
-	{ type: 'casserole',	name: 'Green Bean Casserole',	points: 4,	isTopping: false,	toppings: [] },
-	{ type: 'carrots',		name: 'Carrots',				points: 2,	isTopping: false,	toppings: [] },
-	{ type: 'butter',		name: 'Butter',					points: 2,	isTopping: true,	toppings: [] },
-	{ type: 'turkey',		name: 'Turkey',					points: 7,	isTopping: false,	toppings: [ [ 'cranberry', 'gravy' ] ] },
-	{ type: 'ham',			name: 'Ham',					points: 7,	isTopping: false,	toppings: [] },
-	{ type: 'cranberry',	name: 'Cranberry Sauce'			points: 3,	isTopping: false,	toppings: [] },
-	{ type: 'potatoes',		name: 'Mashed Potatoes'			points: 4,	isTopping: false,	toppings: [ [ 'butter', 'gravy' ], [ 'salt' ] ] },
-	{ type: 'salt',			name: 'Salt',					points: 1,	isTopping: true,	toppings: [] },
-	{ type: 'buns',			name: 'Buns',					points: 3,	isTopping: false,	toppings: [ [ 'butter' ] ] },
-	{ type: 'salad',		name: 'Salad',					points: 2,	isTopping: false,	toppings: [ [ 'dressing' ] ] },
-	{ type: 'sprouts',		name: 'Brussels Sprouts',		points: 4,	isTopping: false,	toppings: [ [ 'butter' ], [ 'butter' ], [ 'salt' ] ] },
-	{ type: 'gravy',		name: 'Gravy',					points: 3,	isTopping: true,	toppings: [] },
-	{ type: 'dressing',		name: 'Dressing',				points: 3,	isTopping: true,	toppings: [] }
-];
+import clone from 'clone';
+import FOOD_ITEMS from './foodItems';
+
+const STARTING_HAND_SIZE = 4;
 
 const CARD_AMOUNTS = {
 	casserole: 5,
@@ -34,12 +23,14 @@ function generateState(numPlayers) {
 	// generate a deck of cards
 	let cards = [];
 	let id = 0;
-	for (let cardBlueprint of CARD_TYPES) {
-		let amount = CARD_AMOUNTS[cardBlueprint.type];
+	for (let [ type, foodItem ] of Object.entries(FOOD_ITEMS)) {
+		let amount = CARD_AMOUNTS[type] || 0;
 		for (let i = 0; i < amount; i++) {
-			let card = clone(cardBlueprint);
-			card.id = id;
-			cards.push(card);
+			cards.push({
+				id,
+				type,
+				...clone(foodItem)
+			});
 			id++;
 		}
 	}
@@ -52,7 +43,45 @@ function generateState(numPlayers) {
 		cards[j] = temp;
 	}
 
-	// maybe the game state should be a bunch of classes, with a getState that turns it to json and a setState vice versa
+	// generate all the tiles
+	let tiles = [];
+	id = 0;
+	for (let [ type, foodItem ] of Object.entries(FOOD_ITEMS)) {
+		tiles.push({
+			id,
+			type,
+			...clone(foodItem)
+		});
+		id++;
+	}
+
+	// shuffle tiles
+	for (let i = 0; i < tiles.length; i++) {
+		let j = i + Math.floor(Math.random() * (tiles.length - i));
+		let temp = tiles[i];
+		tiles[i] = tiles[j];
+		tiles[j] = temp;
+	}
+
+	// deal the cards and the tiles
+	let guests = [];
+	for (let i = 0; i < numPlayers; i++) {
+		guests[i] = {
+			hand: cards.slice(STARTING_HAND_SIZE * i, STARTING_HAND_SIZE * (i + 1)),
+			table: tiles.filter((tile, j) => { return j % numPlayers === i }),
+			held: null,
+			plate: [],
+			tummy: []
+		};
+	}
+
+	// return the state
+	return {
+		drawPile: cards.slice(STARTING_HAND_SIZE * numPlayers),
+		discardPile: [],
+		currGuest: 0,
+		guests: guests
+	};
 }
 
 export default generateState;
