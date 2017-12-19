@@ -1,7 +1,8 @@
 class Player {
-	constructor(index, choose, evaluate) {
+	constructor(index, choose, chooseSecretly, evaluate) {
 		this.index = index;
-		this.choose = choose; // (options, isUncertain, weights)
+		this.choose = choose; // (options)
+		this.chooseSecretly = chooseSecretly; // (options)
 		this.evaluate = evaluate; // (state)
 	}
 	average(evaluations) {

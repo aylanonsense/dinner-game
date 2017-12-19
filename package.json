@@ -10,8 +10,8 @@
   "scripts": {
     "start": "babel-node index.js --presets env",
     "start:watch": "nodemon index.js --exec babel-node --presets env",
-    "test": "mocha --require babel-register test.js",
-    "test:watch": "nodemon --exec \"mocha --require babel-register test.js\""
+    "test": "mocha --require babel-register",
+    "test:watch": "nodemon --exec \"mocha --require babel-register\""
   },
   "babel": {
     "presets": [
@@ -39,6 +39,7 @@
     "clone": "^2.1.1"
   },
   "devDependencies": {
+    "expect": "^22.0.1",
     "mocha": "^4.0.1",
     "nodemon": "^1.13.3"
   }
