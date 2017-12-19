@@ -5,7 +5,6 @@ class GameSimulation {
 		this.state = null;
 		this.players = [];
 		this.choose = null;
-		this.chooseRandomly = null;
 		this.seed = seed || 'default-seed';
 		this._rand = null;
 	}

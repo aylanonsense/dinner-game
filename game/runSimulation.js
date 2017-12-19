@@ -54,10 +54,14 @@ function runSimulation(game, state, evaluate, seed) {
 
 	// assign a choose function to the game simulation
 	game.choose = (options, actualChoiceIndex, playersWhoKnowActualChoice) => {
-		return choose(options, actualChoiceIndex, playersWhoKnowActualChoice || [], null, true);
-	};
-	game.chooseRandomly = (options, playersWhoKnowActualChoice) => {
-		return choose(options, null, playersWhoKnowActualChoice || [], null, true);
+		// called as (options, playersWhoKnowActualChoice) to pick randomly
+		if (arguments.length <= 1 || Array.isArray(actualChoiceIndex)) {
+			return choose(options, null, actualChoiceIndex || [], null, true);
+		}
+		// called as (options, actualChoiceIndex, playersWhoKnowActualChoice)
+		else {
+			return choose(options, actualChoiceIndex, playersWhoKnowActualChoice || [], null, true);
+		}
 	};
 
 	// iterate until we arrive at a final outcome

@@ -13,7 +13,7 @@ class RandomRollGame extends GameSimulation {
 		for (let i = 0; i < this.state.numRolls; i++) {
 			this.rand();
 		}
-		this.state.actual = this.chooseRandomly([ 1, 2, 2, 2, 3, 4, 5, 6 ]);
+		this.state.actual = this.choose([ 1, 2, 2, 2, 3, 4, 5, 6 ]);
 	}
 }
 
@@ -21,7 +21,7 @@ function runRandomRollSimulation(evaluate) {
 	return runSimulation(new RandomRollGame('abcd'), {}, evaluate).state;
 }
 
-describe('a dice rolling game', () => {
+describe('a random rolling game', () => {
 	it('cannot manipulate randomness', () => {
 		/*
 			with a seed of 'abcd' you get these outcomes:
