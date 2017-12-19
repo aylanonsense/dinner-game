@@ -57,7 +57,7 @@ function runSimulation(game, state, evaluate, seed) {
 		return choose(options, actualChoiceIndex, playersWhoKnowActualChoice || [], null, true);
 	};
 	game.chooseRandomly = (options, playersWhoKnowActualChoice) => {
-		return choose(options, null, playersWhoKnowActualChoice || [], null);
+		return choose(options, null, playersWhoKnowActualChoice || [], null, true);
 	};
 
 	// iterate until we arrive at a final outcome

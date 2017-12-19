@@ -1,4 +1,4 @@
-import rand from 'random-seed';
+import randomSeed from 'random-seed';
 
 class GameSimulation {
 	constructor(seed) {
@@ -11,9 +11,9 @@ class GameSimulation {
 	}
 	rand(...args) {
 		if (!this._rand) {
-			this._rand = new rand(this.seed);
+			this._rand = randomSeed.create(this.seed);
 		}
-		return this._rand(...args);
+		return this._rand.random(...args);
 	}
 	reset(state, seed) {
 		this.state = state;
