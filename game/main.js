@@ -26,9 +26,9 @@ function consoleLogState(state, ) {
 		console.log(`    GUEST ${i + 1}`);
 		console.log(`        HAND:   ${guest.hand.map(card => card.type).join(', ')}`);
 		console.log(`        TABLE:  ${guest.table.map(tile => tile.type).join(', ')}`);
-		console.log(`        HELD:   ${guest.plate.held ? guest.plate.held.type : ''}`);
+		console.log(`        HELD:   ${guest.held ? guest.held.type : ''}`);
 		console.log(`        PLATE:  ${guest.plate.map(card => card.type).join(', ')}`);
-		console.log(`        TUMMY:  ${guest.plate.map(card => card.type).join(', ')}`);
+		console.log(`        TUMMY:  ${guest.tummy.map(card => card.type).join(', ')}`);
 	});
 }
 

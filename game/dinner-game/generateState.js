@@ -2,7 +2,8 @@ import clone from 'clone';
 import FOOD_ITEMS from './foodItems';
 
 const STARTING_HAND_SIZE = 4;
-
+const DRAW_AMOUNT = 3;
+const MAX_TABLE_TILES = 4;
 const CARD_AMOUNTS = {
 	casserole: 5,
 	carrots: 5,
@@ -67,6 +68,7 @@ function generateState(numPlayers) {
 	let guests = [];
 	for (let i = 0; i < numPlayers; i++) {
 		guests[i] = {
+			index: i,
 			hand: cards.slice(STARTING_HAND_SIZE * i, STARTING_HAND_SIZE * (i + 1)),
 			table: tiles.filter((tile, j) => { return j % numPlayers === i }),
 			held: null,
@@ -80,6 +82,8 @@ function generateState(numPlayers) {
 		drawPile: cards.slice(STARTING_HAND_SIZE * numPlayers),
 		discardPile: [],
 		currGuest: 0,
+		drawAmount: DRAW_AMOUNT,
+		maxTableTiles: MAX_TABLE_TILES,
 		guests: guests
 	};
 }
